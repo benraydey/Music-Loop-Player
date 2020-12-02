@@ -1,0 +1,72 @@
+unit uProjects;
+
+interface
+
+uses SysUtils;
+
+type TProjects = class
+  private
+    ProjectID : integer;
+    ProjectName,
+    LastSavedDate : string;
+    Tempo : integer;
+  public
+    Constructor Create (id : integer; na : string; te : integer; da : string);
+    function getTempo : integer;
+    function getProjectName : string;
+    function getProjectID : integer;
+    procedure setTempo (te : integer);
+    procedure setProjectName (na : string);
+    procedure setLastSavedDate (da : string);
+    function toString : string;
+end;
+
+implementation
+
+{ TProjects }
+
+constructor TProjects.Create(id : integer; na: string; te: integer; da : string);
+begin
+  ProjectID := id;
+  ProjectName := na;
+  Tempo := te;
+  LastSavedDate := da;
+end;
+
+function TProjects.getTempo: Integer;
+begin
+  Result := Tempo;
+end;
+
+function TProjects.getProjectID: integer;
+begin
+  Result := ProjectID
+end;
+
+function TProjects.getProjectName: string;
+begin
+  Result := ProjectName;
+end;
+
+procedure TProjects.setLastSavedDate(da: string);
+begin
+  LastSavedDate := da;
+end;
+
+procedure TProjects.setTempo(te: integer);
+begin
+  Tempo := te;
+end;
+
+procedure TProjects.setProjectName(na: string);
+begin
+  ProjectName := na;
+end;
+
+function TProjects.toString: string;
+begin
+  Result := LastSavedDate;
+end;
+
+end.
+ 

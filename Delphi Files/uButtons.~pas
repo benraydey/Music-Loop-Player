@@ -1,0 +1,63 @@
+unit uButtons;
+
+interface
+
+uses SysUtils, Classes, Dialogs;
+
+{Buttons class defines a buttons object. A buttons object
+ contains all the data pertaining to a sample
+ associated with a particular sample launch button}
+
+type TButtons = class
+  private
+    SampleID : Integer;
+    SampleName : String;
+    FileName : String;
+    Bars : Integer;
+  public
+    Constructor Create (id, ba : integer; na, fi : string);   {Instantiates object. Takes in id, bars, name and filename as parameters}
+    function getName : string;        {Returns the sample's}
+    function getFileName : String;
+    function getID : Integer;
+    function getBars : Integer;
+
+end;
+
+implementation
+
+{ TButtons }
+
+constructor TButtons.Create(id, ba: integer; na, fi: string);
+begin
+
+  {Instantiates object. Takes in id, bars, name and filename as parameters}
+
+  SampleID := id;
+  SampleName := na;
+  FileName := fi;
+  Bars := ba;
+
+end;
+
+function TButtons.getBars: Integer;
+begin
+ Result := Bars;
+end;
+
+function TButtons.getFileName: String;
+begin
+  Result := FileName;
+end;
+
+function TButtons.getID: Integer;
+begin
+  Result := SampleID;
+end;
+
+function TButtons.getName: string;
+begin
+  Result := SampleName;
+end;
+
+end.
+ 

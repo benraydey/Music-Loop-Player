@@ -1,0 +1,605 @@
+unit uSamplesArray;
+
+interface
+
+uses uSamples, ADODB, DB, SysUtils, Classes, Dialogs, Windows, Messages, Variants, Graphics, Controls, Forms,
+   StdCtrls, ExtCtrls;
+
+type TSamplesArray = class
+  private
+    conn : TADOConnection;
+  public
+    Constructor Create (db : string);      {Instantiates object. Connects to the database}
+    function getCategories : TStringList;  {Returns a stringlist of Categories}
+    function getGenres : TStringList;      {Returns a stringlist of Genres}
+    function getAllSamples : TStringList;  {Returns a stringlist of all sample objects}
+    function getSamplesWhere (ta : string) : TStringList; {Returns a stringlist of samples based on search criteria}
+    function getFavourites : TStringList;  {Returns a stringlist of samples under the favourites category}
+    function getInstruments (ex: Boolean) : TStringList; {Returns a stringlist of Instruments}
+    function getMoods (ord : boolean) : TStringList;  {Returns a stringlist of Moods}
+    function possibleTags (com: TStringList; ob : boolean) : TStringList;  {Returns a stringlist of possible tags for the Tile View interface. Takes in a TStringList of the current combination}
+    procedure newSample (na, fi, inst, ge : string; te : integer; ba : integer; ta : TStringList);  {Adds a new sample to the database}
+    procedure setFavourite (id : integer; fa : string);  {Updates the favourites value of a sample in the database}
+
+end;
+
+
+implementation
+
+{ TSamplesArray }
+
+constructor TSamplesArray.Create(db: string);
+begin
+  {Instantiates object. Connects to the database}
+  conn := TADOConnection.Create(NIL);
+  conn.ConnectionString := 'Provider=MSDASQL.1;Persist Security Info=False;Extended Properties="DBQ=' + db + ';Driver={Driver do Microsoft Access (*.mdb)};DriverId=25;FIL=MS Access;FILEDSN=C:\Program Files\Common Files\ODBC\Data Sources\Test.dsn;MaxBufferSize=2048;MaxScanRows=8;PageTimeout=5;SafeTransactions=0;Threads=3;UID=admin;UserCommitSync=Yes;"';
+end;
+
+function TSamplesArray.getCategories: TStringList;
+var
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of Categories}
+
+  sl := TStringList.Create;
+
+  sl.Add('All');
+  sl.Add('Favourites');
+  sl.Add('Genre');           {Categories}
+  sl.Add('Instrument');
+  sl.Add('Mood');
+
+  Result := sl;          {Return a TStringlist object}
+
+
+end;
+
+function TSamplesArray.getAllSamples: TStringList;
+var
+  SQLq : String;
+  query : TADOQuery;
+  s : TSamples;
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of all sample objects}
+
+{SQL Query}
+  SQLq := 'SELECT * FROM tblSamples ORDER BY SampleName ASC';
+  query := TADOQuery.Create(NIL);
+  query.Connection := conn;
+  query.SQL.Add(sqlQ);
+  query.Active := true;
+
+  sl := TStringList.Create;
+
+  While NOT query.Eof do
+    begin
+      s := TSamples.Create(query.FieldValues['SampleID'],
+                           query.FieldValues['Tempo'],
+                           query.FieldValues['Bars'],           {Extract sample data from query}
+                           query.FieldValues['SampleName'],
+                           query.FieldValues['Favourites'],
+                           query.FieldValues['FileName'],
+                           query.FieldValues['Instrument']);
+      sl.AddObject(s.toString, s);
+      query.Next;
+    end;
+
+  query.Active := false;
+
+  query.Close;
+
+  Result := sl;           {Return a TStringlist object}
+
+end;
+
+function TSamplesArray.getSamplesWhere(ta: string): TStringList;
+var
+  SQLq : String;
+  query : TADOQuery;
+  s : TSamples;
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of samples based on search criteria}
+
+{SQL Query}
+  SQLq := 'SELECT * FROM tblSamples, tblTags WHERE (((tblSamples.SampleID)=[tblTags].[SampleID]) AND ((tblTags.TagName)= ' + '''' + ta + '''' + ')) ORDER BY SampleName ASC;';
+
+  query := TADOQuery.Create(NIL);
+  query.Connection := conn;
+  query.SQL.Add(sqlQ);
+  query.Active := true;
+
+  sl := TStringList.Create;
+
+  While NOT query.Eof do
+    begin
+      s := TSamples.Create(query.FieldValues['SampleID'],
+                           query.FieldValues['Tempo'],
+                           query.FieldValues['Bars'],          {Extract sample data from query}
+                           query.FieldValues['SampleName'],
+                           query.FieldValues['Favourites'],
+                           query.FieldValues['FileName'],
+                           query.FieldValues['Instrument']);
+      sl.AddObject(s.toString, s);
+      query.Next;
+    end;
+
+  query.Active := false;
+
+  query.Close;
+
+  Result := sl;          {Return a TStringlist object}
+
+end;
+
+function TSamplesArray.getFavourites: TStringList;
+var
+  SQLq : String;
+  query : TADOQuery;
+  s : TSamples;
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of samples under the favourites category}
+
+{SQL Query}
+  SQLq := 'SELECT * FROM tblSamples WHERE Favourites = ' + '''True''' + ' ORDER BY SampleName ASC ;';
+
+  query := TADOQuery.Create(NIL);
+  query.Connection := conn;
+  query.SQL.Add(sqlQ);
+  query.Active := true;
+
+  sl := TStringList.Create;
+
+  While NOT query.Eof do
+    begin
+      s := TSamples.Create(query.FieldValues['SampleID'],
+                           query.FieldValues['Tempo'],
+                           query.FieldValues['Bars'],
+                           query.FieldValues['SampleName'],    {Extract sample data from query}
+                           query.FieldValues['Favourites'],
+                           query.FieldValues['FileName'],
+                           query.FieldValues['Instrument']);
+      sl.AddObject(s.toString, s);
+      query.Next;
+    end;
+
+  query.Active := false;
+
+  query.Close;
+
+  Result := sl;              {Return a TStringlist object}
+
+end;
+
+function TSamplesArray.getGenres: TStringList;
+var
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of Genres}
+
+  sl := TStringList.Create;
+
+  sl.Add('Country');
+  sl.Add('Electronic');      {Genres}
+  sl.Add('Jazz');
+  sl.Add('Rock');
+  sl.Add('Urban');
+
+  Result := sl;        {Returns a TStringList object}
+
+end;
+
+function TSamplesArray.getInstruments (ex : Boolean): TStringList;
+var
+  SQLq : String;
+  query : TADOQuery;
+  s : string;
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of Instruments}
+
+  If ex = true then  {List of instruments that currently exist in samples table}
+    begin
+    {SQL Query}
+      SQLq := 'SELECT Instrument FROM tblSamples GROUP BY Instrument;';
+
+      query := TADOQuery.Create(NIL);
+      query.Connection := conn;
+      query.SQL.Add(sqlQ);
+      query.Active := true;
+
+      sl := TStringList.Create;
+
+      While NOT query.Eof do
+        begin
+          s := query.FieldValues['Instrument'];    {Extract instrument from query}
+          sl.Add(s);
+          query.Next;
+        end;
+
+      query.Active := false;
+
+      query.Close;
+    end
+  else         {Returns list of all possible instruments}
+    begin
+      sl := TStringList.Create;
+
+      sl.Add('Ac Guitar');
+      sl.Add('Bass');
+      sl.Add('Beats');
+      sl.Add('Bell');
+      sl.Add('Drums');
+      sl.Add('Elec Guitar');       
+      sl.Add('FX');
+      sl.Add('Glockenspiel');
+      sl.Add('Harmonica');             {All possible instruments}
+      sl.Add('Keyboards');
+      sl.Add('Organ');
+      sl.Add('Percussion');
+      sl.Add('Piano');
+      sl.Add('Shaker');
+      sl.Add('Synth Bass');
+      sl.Add('Synth');
+      sl.Add('Tambourine');
+      sl.Add('Vocals');
+    end;
+
+Result := sl;           {Returns a TStringList object}
+
+end;
+
+function TSamplesArray.getMoods(ord : boolean) : TStringList;
+var
+  sl : TStringList;
+begin
+
+  {Returns a stringlist of Moods}
+
+  sl := TStringList.Create;
+
+  If ord = true then    {If ordered value is true - alphabetical order}
+    begin
+      sl.Add('Acoustic');
+      sl.Add('Clean');
+      sl.Add('Distorted');
+      sl.Add('Electric');      {Alphabetical Order}
+      sl.Add('Happy');
+      sl.Add('Intense');
+      sl.Add('Relaxed');
+      sl.Add('Sad');
+    end
+  else
+    begin
+      sl.Add('Acoustic');
+      sl.Add('Clean');
+      sl.Add('Happy');           {Alternative Order}
+      sl.Add('Relaxed');
+      sl.Add('Electric');
+      sl.Add('Distorted');
+      sl.Add('Sad');
+      sl.Add('Intense');
+    end;
+
+  Result := sl;           {Return a TStringList object}
+
+end;
+
+procedure TSamplesArray.setFavourite(id : integer; fa : string);
+var
+  SQLq : String;
+  query : TADOQuery;
+begin
+
+  {Updates the favourites value of a sample in the database}
+
+{SQL Query}
+  SQLq := 'UPDATE tblSamples SET Favourites = ' + '''' + fa + '''' + ' WHERE SampleID = ' + IntToStr(id);
+
+  query := TADOQuery.Create(NIL);
+  query.Connection := conn;
+  query.Sql.Add(SQLq);
+
+  query.ExecSQL;
+
+  query.Close;
+
+end;
+
+procedure TSamplesArray.newSample(na, fi, inst, ge : string; te : integer; ba : integer; ta : TStringList);
+var
+  SQLq : String;
+  query : TADOQuery;
+  i, sampleID : integer;
+begin
+
+  {Adds a new sample to the database}
+
+
+  {create a new entry in the database for the new sample}
+  SQLq := 'INSERT INTO tblSamples (SampleName, Favourites, FileName, Instrument, Bars, Tempo) VALUES ('
+           + '''' + na + ''',' + '''False''' + ',''' + fi + ''',''' + inst + ''',' + IntToStr(ba) + ',' + FloatToStr(te) + ');' ;
+
+  query := TADOQuery.Create(NIL);
+  query.Connection := conn;
+  query.Sql.Add(sqlQ);
+  query.ExecSQL;
+
+  query.Close;
+
+  {create a new entry in the tags table for the tags of the new sample}
+
+  //Fetch Sample ID from tblSamples
+  SQLq := 'SELECT SampleID FROM tblSamples ORDER BY SampleID DESC';
+
+    query := TADOQuery.Create(NIL);
+    query.Connection := conn;
+    query.SQL.Add(sqlQ);
+    query.Active := true;
+
+  sampleID := query.FieldValues['SampleID'];
+
+ 
+  for i := 0 to 3 do
+    begin
+
+      if ta[i] <> 'none' then
+        begin
+          SQLq := 'INSERT INTO tblTags (SampleID, TagName) VALUES (';
+          SQLq := SQLq + IntToStr(sampleID) + ',' + '''' + ta.Strings[i] + '''' + ');';
+          query := TADOQuery.Create(NIL);
+          query.Connection := conn;
+          query.Sql.Add(sqlQ);
+
+          query.ExecSQL;
+
+          query.Close;
+        end;
+    end;
+
+
+
+  {Add the instrument to tblTags}
+    SQLq := 'INSERT INTO tblTags (SampleID, TagName) VALUES (';
+    SQLq := SQLq + IntToStr(sampleID) + ',' + '''' + inst + '''' + ');';
+    query := TADOQuery.Create(NIL);
+    query.Connection := conn;
+    query.Sql.Add(sqlQ);
+
+    query.ExecSQL;
+
+    query.Close;
+
+  {Add the genre to tblTags}
+    SQLq := 'INSERT INTO tblTags (SampleID, TagName) VALUES (';
+    SQLq := SQLq + IntToStr(sampleID) + ',' + '''' + ge + '''' + ');';
+    query := TADOQuery.Create(NIL);
+    query.Connection := conn;
+    query.Sql.Add(sqlQ);
+
+    query.ExecSQL;
+
+    query.Close;
+
+
+end;
+
+function TSamplesArray.possibleTags(com: TStringList; ob : boolean): TStringList;
+var
+  SQLq : String;
+  query,
+  queryTwo : TADOQuery;
+  current, i, index : integer;
+  currentSample,
+  samplesList,
+  possibleTags : TStringList;
+  possible : boolean;
+  s : TSamples;
+begin
+  {Returns a stringlist of possible tags for the Tile View interface. Takes in a TStringList of the current combination}
+
+  possibleTags := TStringList.Create;
+  samplesList := TStringList.Create;
+    
+  if com.Count = 0 then  {no tag tiles are selected}
+    begin
+    {SQL Query}
+      SQLq := 'SELECT TagName FROM tblTags;';
+
+      query := TADOQuery.Create(NIL);
+      query.Connection := conn;
+      query.SQL.Add(sqlQ);
+      query.Active := true;
+
+      {Query the database - list of all tags assigned to a sampleID}
+      While Not query.Eof do
+        begin
+          possibleTags.Add(query.FieldValues['TagName']);      {Extract tag name from query}
+          query.Next;
+        end;
+
+      query.Active := False;
+      query.Close;
+      
+    end
+  else     {tag tiles are selected}
+    begin
+    {SQL Query}
+      SQLq := 'SELECT * FROM tblTags ORDER BY SampleID ASC;';
+
+      query := TADOQuery.Create(NIL);
+      query.Connection := conn;
+      query.SQL.Add(sqlQ);
+      query.Active := true;
+
+      current := query.FieldValues['SampleID'];
+      currentSample := TStringList.Create;
+      currentSample.Add(query.FieldValues['TagName']);
+
+      query.Next;
+
+      While Not query.Eof do
+        begin
+          if query.FieldValues['SampleID'] <> current then
+            begin
+              //Check if sample has all the required associated tags
+              possible := True;
+              currentSample.Sort;
+
+              For i := 0 to com.Count -1 do
+                begin
+                  if currentSample.Find(com.Strings[i], index) then
+                    begin
+                      currentSample.Delete(index);
+                    end
+                  else
+                    begin
+                      possible := False;
+                    end;
+                end;
+
+              if possible then  {If adding tag to combination will return a sample}
+                begin
+                 {Add sample to samplesList}
+                  if ob = true then      {list of sample objects is requested}
+                    begin
+                    {SQL Query}
+                      SQLq := 'SELECT * FROM tblSamples WHERE SampleID = ' + IntToStr(current) + ';';
+
+                      queryTwo := TADOQuery.Create(NIL);
+                      queryTwo.Connection := conn;
+                      queryTwo.SQL.Add(SQLq);
+                      queryTwo.Active := true;
+
+                      While NOT queryTwo.Eof do
+                        begin
+                          s := TSamples.Create(queryTwo.FieldValues['SampleID'],
+                                               queryTwo.FieldValues['Tempo'],
+                                               queryTwo.FieldValues['Bars'],
+                                               queryTwo.FieldValues['SampleName'],      {Extract sample data from query}
+                                               queryTwo.FieldValues['Favourites'],
+                                               queryTwo.FieldValues['FileName'],        {Create a sample object}
+                                               queryTwo.FieldValues['Instrument']);
+                          samplesList.AddObject(s.toString, s);
+                          queryTwo.Next;
+                        end;
+
+                      queryTwo.Active := false;
+
+                      queryTwo.Close;
+
+                    end;
+
+                  if currentSample.Count > 0 then
+                    begin
+                      for i := 0 to currentSample.Count - 1 do
+                        begin
+                          possibleTags.Add(currentSample.Strings[i]);
+                        end;
+                    end;
+                end;
+
+              currentSample.Destroy;
+              current := query.FieldValues['SampleID'];
+              currentSample := TStringList.Create;
+              currentSample.Add(query.FieldValues['TagName']);
+            end
+          else
+            begin
+              currentSample.Add(query.FieldValues['TagName']);
+            end;
+          query.Next;
+        end;
+
+        query.Active := False;
+        query.Close;
+
+        possible := True;
+        currentSample.Sort;
+
+        For i := 0 to com.Count -1 do
+          begin
+            if currentSample.Find(com.Strings[i], index) then
+              begin
+                currentSample.Delete(index);
+              end
+            else
+              begin
+                possible := False;
+              end;
+          end;
+
+        if possible then  {If adding tag to combination will return a sample}
+          begin
+           {Add sample to samplesList}
+            if ob = true then      {list of sample objects is requested}
+              begin
+              {SQL Query}
+                SQLq := 'SELECT * FROM tblSamples WHERE SampleID = ' + IntToStr(current) + ';';
+
+                queryTwo := TADOQuery.Create(NIL);
+                queryTwo.Connection := conn;
+                queryTwo.SQL.Add(SQLq);
+                queryTwo.Active := true;
+
+                While NOT queryTwo.Eof do
+                  begin
+                    s := TSamples.Create(queryTwo.FieldValues['SampleID'],
+                                         queryTwo.FieldValues['Tempo'],
+                                         queryTwo.FieldValues['Bars'],
+                                         queryTwo.FieldValues['SampleName'],      {Extract sample data from query}
+                                         queryTwo.FieldValues['Favourites'],
+                                         queryTwo.FieldValues['FileName'],        {Create a sample object}
+                                         queryTwo.FieldValues['Instrument']);
+                    samplesList.AddObject(s.toString, s);
+                    queryTwo.Next;
+                  end;
+
+                queryTwo.Active := false;
+
+                queryTwo.Close;
+
+              end;
+
+            if currentSample.Count > 0 then
+              begin
+                for i := 0 to currentSample.Count - 1 do
+                  begin
+                    possibleTags.Add(currentSample.Strings[i]);
+                  end;
+              end;
+          end;
+
+
+    end;
+
+
+
+    {code for final query}
+
+
+
+
+
+  {Check - list of samples required}
+
+  if ob then
+    begin
+      Result := samplesList;     {Return a list of sample objects}
+    end
+  else
+    begin
+      Result := possibleTags;   {Return a list of possible tags}
+    end;
+
+end;
+
+end.

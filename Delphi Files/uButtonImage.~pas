@@ -1,0 +1,17 @@
+unit uButtonImage;
+
+interface
+
+uses sysUtils, ExtCtrls, uButtons;
+
+type TButtonImage = class (TImage)
+  private
+  
+  public
+    data : TButtons;
+end;
+
+implementation
+
+end.
+ 
